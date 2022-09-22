@@ -1,13 +1,15 @@
-import requests
-import telebot
 from telebot import types, custom_filters
-import json
-import config
 from telebot.handler_backends import State, StatesGroup #States
 from telebot.storage import StateMemoryStorage
+import requests
+import json
+import config
+import telebot
+
 
 
 class States(StatesGroup):
+
     s_start = State()
     s_experience = State()
     s_schedule = State()
@@ -17,16 +19,16 @@ class States(StatesGroup):
     s_vacancy = State()
     s_contin = State()
     s_answer = State()
-
+    s_show = State()
 
 state_storage = StateMemoryStorage()
-
 bot = telebot.TeleBot(config.token, state_storage=state_storage)
+
+
 params = {'text': 'Data Scientist',
               'area': '113',
               'type': 'open',
-              'per_page': '5',
-              'page': '0',
+              'per_page': '100',
               'period': 7
               }
 
@@ -102,58 +104,65 @@ class Vacancy():
 
     @bot.message_handler(func=lambda message: True, state=States.s_vacancy)
     def get_vacancies(message):
-        n = 0
-        params['area.name'] = message.text
         city = message.text
-        url = 'https://api.hh.ru/vacancies'
-        response = requests.get(url, params)
-        json = response.json()
 
-#        for i in json:
+        x = []
+
+        for page in range(10):
+            params['page'] = page
+            url = 'https://api.hh.ru/vacancies'
+            response = requests.get(url, params)
+            json = response.json()
+            x.append(json)
 
         new_json = []
-        for irem in json['items']:
-            name = irem['name']
-            employer = irem['employer']['name']
-            area = irem['area']['name']
-            alternate_url = irem['alternate_url']
 
-            if irem['salary'] != None:
-                if irem['salary']['from'] != None and irem['salary']['to'] != None:
-                    salary_from = irem['salary']['from']
-                    salary_to= irem['salary']['to']
-                    salary = f"{salary_from} - {salary_to}"
-                elif irem['salary']['from'] != None and irem['salary']['to'] == None:
-                    salary_from = irem['salary']['from']
-                    salary = f"от {salary_from}"
-                elif irem['salary']['from'] == None and irem['salary']['to'] != None:
-                    salary_to = irem['salary']['to']
-                    salary = f"до {salary_to}"
-            else:
-                salary = 'Зарплата не указана'
+        for i in x:
+            for irem in i['items']:
+                name = irem['name']
+                employer = irem['employer']['name']
+                area = irem['area']['name']
+                alternate_url = irem['alternate_url']
 
-            vac = {
-                #	'id': id,
+                if irem['salary'] != None:
+                    if irem['salary']['from'] != None and irem['salary']['to'] != None:
+                        salary_from = irem['salary']['from']
+                        salary_to = irem['salary']['to']
+                        salary = f"{salary_from} - {salary_to}"
+                    elif irem['salary']['from'] != None and irem['salary']['to'] == None:
+                        salary_from = irem['salary']['from']
+                        salary = f"от {salary_from}"
+                    elif irem['salary']['from'] == None and irem['salary']['to'] != None:
+                        salary_to = irem['salary']['to']
+                        salary = f"до {salary_to}"
+                else:
+                    salary = 'Зарплата не указана'
+
+                vac = {
                     'name': name,
                     'salary': salary,
                     'employer': employer,
                     'area': area,
                     'alternate_url': alternate_url
-                    }
+                }
 
+                if area == city:
+                    new_json.append(vac)
+                else:
+                    pass
 
-            new_json.append(vac)
 
         vacancies = []
         for lists in new_json:
             for values in lists.values():
                 vacancies.append(values)
+
         list = []
         for i in range(0, len(vacancies), 5):
-            list.append(vacancies[i:i+5])
+            list.append(vacancies[i:i + 5])
 
 
-        for item in list:
+        for item in list[:5]:
             for j in item:
                 ssilka = item[4]
                 vacan = item[:4]
@@ -165,24 +174,24 @@ class Vacancy():
             markup.add(url)
 
             bot.send_message(message.chat.id, vacan2, reply_markup=markup)
+            del list[:5]
 
         markup_cont = types.InlineKeyboardMarkup()
         yes = types.InlineKeyboardButton(text='Да', callback_data='yes')
         no = types.InlineKeyboardButton(text='Нет', callback_data='no')
         markup_cont.add(yes, no)
-        bot.send_message(message.chat.id, 'Начать сначала?', reply_markup=markup_cont)
+        bot.send_message(message.chat.id, 'Искать снова?', reply_markup=markup_cont)
 
         bot.set_state(message.chat.id, States.s_answer)
 
-    @bot.callback_query_handler(func=lambda c: True, state=States.s_answer)
-    def answer(call):
-        if call.data == 'yes':
-            bot.delete_state(call.from_user.id)
-            bot.send_message(call.from_user.id, 'Нажмите /start')
-        else:
-            bot.send_message(call.from_user.id, 'До новых встреч!')
-            bot.delete_state(call.from_user.id)
-
+        @bot.callback_query_handler(func=lambda c: True, state=States.s_answer)
+        def answer(call):
+            if call.data == 'yes':
+                bot.delete_state(call.from_user.id)
+                bot.send_message(call.from_user.id, 'Нажмите /start')
+            else:
+                bot.send_message(call.from_user.id, 'До новых встреч!')
+                bot.delete_state(call.from_user.id)
 
 
 bot.add_custom_filter(custom_filters.StateFilter(bot))
