@@ -3,9 +3,11 @@ from telebot.handler_backends import State, StatesGroup #States
 from telebot.storage import StateMemoryStorage
 import requests
 import json
-import config
 import telebot
+import os
+from dotenv import load_dotenv, find_dotenv
 
+load_dotenv(find_dotenv())
 
 
 class States(StatesGroup):
@@ -22,7 +24,7 @@ class States(StatesGroup):
     s_show = State()
 
 state_storage = StateMemoryStorage()
-bot = telebot.TeleBot(config.token, state_storage=state_storage)
+bot = telebot.TeleBot(os.getenv('TOKEN'), state_storage=state_storage)
 
 
 params = {'text': 'Data Scientist',
