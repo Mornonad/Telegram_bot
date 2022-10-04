@@ -10,9 +10,8 @@ from dotenv import load_dotenv, find_dotenv
 state_storage = StateMemoryStorage()
 
 load_dotenv(find_dotenv())
-Key = os.getenv('TOKEN')
-bot = telebot.TeleBot(Key, state_storage=state_storage)
 
+bot = telebot.TeleBot(os.getenv('TOKEN'), state_storage=state_storage)
 
 
 class States(StatesGroup):
