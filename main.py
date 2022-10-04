@@ -4,15 +4,11 @@ from telebot.storage import StateMemoryStorage
 import requests
 import json
 import telebot
-import os
-from dotenv import load_dotenv, find_dotenv
+import config
 
 state_storage = StateMemoryStorage()
 
-load_dotenv(find_dotenv())
-
-bot = telebot.TeleBot(os.getenv('TOKEN'), state_storage=state_storage)
-
+bot = telebot.TeleBot(config.TOKEN, state_storage=state_storage)
 
 class States(StatesGroup):
 
@@ -26,9 +22,6 @@ class States(StatesGroup):
     s_contin = State()
     s_answer = State()
     s_show = State()
-
-
-
 
 params = {'text': 'Data Scientist',
               'area': '113',
