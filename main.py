@@ -44,18 +44,18 @@ class Vacancy():
 
     @bot.message_handler(commands=['start', 'help'])
     def get_experience(message):
-        markup = types.InlineKeyboardMarkup()
+        markup_experience = types.InlineKeyboardMarkup()
         zero = types.InlineKeyboardButton(text='Нет опыта', callback_data='noExperience')
         one = types.InlineKeyboardButton(text='От 1 года до 3 лет', callback_data='between1And3')
-        three = types.InlineKeyboardButton(text='От 1 года до 3 лет', callback_data='between3And6')
+        three = types.InlineKeyboardButton(text='От 3 до 6 лет', callback_data='between3And6')
         six = types.InlineKeyboardButton(text='Более 6 лет', callback_data='moreThan6')
-        markup.add(zero, one)
-        markup.add(three, six)
+        markup_experience.add(zero, one)
+        markup_experience.add(three, six)
 
         send_mess = f"<b>Привет, {message.from_user.first_name}</b>!\nПриступим к поиску вакансий!"
         bot.send_message(message.chat.id, send_mess, parse_mode='html')
 
-        bot.send_message(message.chat.id, 'Выберите опыт работы', parse_mode='html', reply_markup=markup)
+        bot.send_message(message.chat.id, 'Выберите опыт работы', parse_mode='html', reply_markup=markup_experience)
         bot.set_state(message.chat.id, States.s_salary)
 
 
@@ -69,14 +69,14 @@ class Vacancy():
     def get_schedule(message):
 
         params['salary.from']  = message.text
-        markup = types.InlineKeyboardMarkup()
+        markup_schedule = types.InlineKeyboardMarkup()
         full = types.InlineKeyboardButton(text='Полный день', callback_data='fullDay')
         removable = types.InlineKeyboardButton(text='Сменный график', callback_data='shift')
         flexible = types.InlineKeyboardButton(text='Гибкий график', callback_data='flexible')
         remote = types.InlineKeyboardButton(text='Удаленная работа', callback_data='remote')
-        markup.add(full, removable)
-        markup.add(flexible, remote)
-        bot.send_message(message.chat.id, 'Выберите график работы', reply_markup=markup)
+        markup_schedule.add(full, removable)
+        markup_schedule.add(flexible, remote)
+        bot.send_message(message.chat.id, 'Выберите график работы', reply_markup=markup_schedule)
         bot.set_state(message.chat.id, States.s_city)
 
 
@@ -105,35 +105,35 @@ class Vacancy():
     @bot.message_handler(func=lambda message: True, state=States.s_vacancy)
     def get_vacancies(message):
         city = message.text
-
-        x = []
+        bot.send_message(message.chat.id, "Выбираю вакансии под вас...")
+        list_of_jsons = []
 
         for page in range(10):
             params['page'] = page
             url = 'https://api.hh.ru/vacancies'
             response = requests.get(url, params)
             json = response.json()
-            x.append(json)
+            list_of_jsons.append(json)
 
         new_json = []
 
-        for i in x:
-            for irem in i['items']:
-                name = irem['name']
-                employer = irem['employer']['name']
-                area = irem['area']['name']
-                alternate_url = irem['alternate_url']
+        for i in list_of_jsons:
+            for item in i['items']:
+                name = item['name']
+                employer = item['employer']['name']
+                area = item['area']['name']
+                alternate_url = item['alternate_url']
 
-                if irem['salary'] != None:
-                    if irem['salary']['from'] != None and irem['salary']['to'] != None:
-                        salary_from = irem['salary']['from']
-                        salary_to = irem['salary']['to']
+                if item['salary'] != None:
+                    if item['salary']['from'] != None and item['salary']['to'] != None:
+                        salary_from = item['salary']['from']
+                        salary_to = item['salary']['to']
                         salary = f"{salary_from} - {salary_to}"
-                    elif irem['salary']['from'] != None and irem['salary']['to'] == None:
-                        salary_from = irem['salary']['from']
+                    elif item['salary']['from'] != None and item['salary']['to'] == None:
+                        salary_from = item['salary']['from']
                         salary = f"от {salary_from}"
-                    elif irem['salary']['from'] == None and irem['salary']['to'] != None:
-                        salary_to = irem['salary']['to']
+                    elif item['salary']['from'] == None and item['salary']['to'] != None:
+                        salary_to = item['salary']['to']
                         salary = f"до {salary_to}"
                 else:
                     salary = 'Зарплата не указана'
@@ -169,18 +169,18 @@ class Vacancy():
 
                 vacan2 = '\n'.join(map(str, vacan))
 
-            markup = types.InlineKeyboardMarkup()
+            markup_url = types.InlineKeyboardMarkup()
             url = types.InlineKeyboardButton(text='Подробнее', url=ssilka)
-            markup.add(url)
+            markup_url.add(url)
 
-            bot.send_message(message.chat.id, vacan2, reply_markup=markup)
+            bot.send_message(message.chat.id, vacan2, reply_markup=markup_url)
             del list[:5]
 
-        markup_cont = types.InlineKeyboardMarkup()
+        markup_search_again = types.InlineKeyboardMarkup()
         yes = types.InlineKeyboardButton(text='Да', callback_data='yes')
         no = types.InlineKeyboardButton(text='Нет', callback_data='no')
-        markup_cont.add(yes, no)
-        bot.send_message(message.chat.id, 'Искать снова?', reply_markup=markup_cont)
+        markup_search_again.add(yes, no)
+        bot.send_message(message.chat.id, 'Искать снова?', reply_markup=markup_search_again)
 
         bot.set_state(message.chat.id, States.s_answer)
 
