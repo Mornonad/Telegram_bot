@@ -7,7 +7,12 @@ import telebot
 import os
 from dotenv import load_dotenv, find_dotenv
 
+state_storage = StateMemoryStorage()
+
 load_dotenv(find_dotenv())
+Key = os.getenv('TOKEN')
+bot = telebot.TeleBot(Key, state_storage=state_storage)
+
 
 
 class States(StatesGroup):
@@ -23,8 +28,7 @@ class States(StatesGroup):
     s_answer = State()
     s_show = State()
 
-state_storage = StateMemoryStorage()
-bot = telebot.TeleBot(os.getenv('TOKEN'), state_storage=state_storage)
+
 
 
 params = {'text': 'Data Scientist',
